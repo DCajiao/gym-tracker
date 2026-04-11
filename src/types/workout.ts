@@ -2,49 +2,45 @@
 
 export type Tab = "workout" | "history" | "insights";
 
-export interface ExerciseSet {
-  reps: number;
-  weight: number; // kg
+// ── Catálogo ──────────────────────────────────────────────────────────────────
+
+export interface RoutineType {
+  id: number;
+  category: string;          // push | pull | leg | rest
+  daysOfTheWeek: string;     // "lunes,miercoles"
+  description?: string | null;
+  exercises?: Exercise[];
 }
 
 export interface Exercise {
-  id: string;
+  id: number;
   name: string;
-  muscleGroup: string;
-  sets: ExerciseSet[];
-  restSeconds: number;
-  notes?: string;
+  description?: string | null;
+  series: number;
+  repetitions: number;
+  muscleTags: string;         // "bícep,antebrazo"
+  routineTypeIdFk?: number | null;
+  routineType?: RoutineType | null;
 }
 
-export interface DayRoutine {
-  dayName: string;
-  dayShort: string;
-  routineName: string;
-  emoji: string;
-  exercises: Exercise[];
-  isRest: boolean;
-}
+// ── Logs de entrenamiento ─────────────────────────────────────────────────────
 
-export interface LoggedSet {
-  reps: number;
-  weight: number;
-  completed: boolean;
-}
-
-export interface LoggedExercise {
+/** Snapshot del ejercicio en el momento del log */
+export interface ExerciseSnapshot {
   name: string;
-  muscleGroup: string;
-  sets: LoggedSet[];
+  description?: string | null;
+  series: number;
+  repetitions: number;
+  muscleTags: string;
 }
 
-export interface WorkoutLog {
-  date: string; // yyyy-MM-dd
-  dayIndex: number;
-  routineName: string;
-  emoji: string;
-  exercises: LoggedExercise[];
-  totalSets: number;
-  completedSets: number;
-  totalVolume: number; // kg
-  durationMinutes: number;
+export interface TrainingLog {
+  id: number;
+  exerciseIdFk?: number | null;
+  weightKg?: number | null;
+  repetitionsDone: number;
+  trainingDate: string;       // ISO date string: "yyyy-MM-dd"
+  startTime?: string | null;  // "HH:mm:ss"
+  endTime?: string | null;
+  exerciseDetails: ExerciseSnapshot;
 }

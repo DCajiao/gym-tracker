@@ -6,18 +6,40 @@ datasource db {
   provider = "postgresql"
 }
 
-model WorkoutLog {
-  id              Int      @id @default(autoincrement())
-  date            String   @unique
-  dayIndex        Int      @map("day_index")
-  routineName     String   @map("routine_name")
-  emoji           String
-  exercises       Json
-  totalSets       Int      @map("total_sets")
-  completedSets   Int      @map("completed_sets")
-  totalVolume     Int      @map("total_volume")
-  durationMinutes Int      @map("duration_minutes")
-  createdAt       DateTime @default(now()) @map("created_at")
+model RoutineType {
+  id              Int        @id @default(autoincrement())
+  category        String
+  daysOfTheWeek   String     @map("days_of_the_week")
+  description     String?
+  exercises       Exercise[]
 
-  @@map("workout_logs")
+  @@map("routine_type")
+}
+
+model Exercise {
+  id               Int           @id @default(autoincrement())
+  name             String
+  description      String?
+  series           Int
+  repetitions      Int
+  muscleTags       String        @map("muscle_tags")
+  routineTypeIdFk  Int?          @map("routine_type_id_fk")
+  routineType      RoutineType?  @relation(fields: [routineTypeIdFk], references: [id])
+  trainingLogs     TrainingLog[]
+
+  @@map("exercises")
+}
+
+model TrainingLog {
+  id               Int       @id @default(autoincrement())
+  exerciseIdFk     Int?      @map("exercise_id_fk")
+  exercise         Exercise? @relation(fields: [exerciseIdFk], references: [id])
+  weightKg         Decimal?  @map("weight_kg") @db.Decimal(6, 2)
+  repetitionsDone  Int       @map("repetitions_done")
+  trainingDate     DateTime  @map("training_date") @db.Date
+  startTime        DateTime? @map("start_time") @db.Time(6)
+  endTime          DateTime? @map("end_time") @db.Time(6)
+  exerciseDetails  Json      @map("exercise_details")
+
+  @@map("training_logs")
 }
