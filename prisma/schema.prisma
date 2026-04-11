@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model WorkoutLog {
+  id              Int      @id @default(autoincrement())
+  date            String   @unique
+  dayIndex        Int      @map("day_index")
+  routineName     String   @map("routine_name")
+  emoji           String
+  exercises       Json
+  totalSets       Int      @map("total_sets")
+  completedSets   Int      @map("completed_sets")
+  totalVolume     Int      @map("total_volume")
+  durationMinutes Int      @map("duration_minutes")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("workout_logs")
+}
