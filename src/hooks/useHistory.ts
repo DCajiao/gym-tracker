@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
-export function useHistory() {
+export function useHistory(params?: { date?: string; exerciseId?: number }) {
   return useQuery({
-    queryKey: ["history"],
-    queryFn: api.history.list,
-    staleTime: 1000 * 60, // 1 min
+    queryKey: ["training-logs", params],
+    queryFn: () => api.trainingLogs.list(params),
+    staleTime: 1000 * 60,
   });
 }

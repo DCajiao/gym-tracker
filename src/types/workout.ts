@@ -2,6 +2,27 @@
 
 export type Tab = "workout" | "history" | "insights";
 
+// ── Schedule (semana) ─────────────────────────────────────────────────────────
+
+export interface DaySchedule {
+  dayIndex:    number;
+  dayName:     string;
+  dayShort:    string;
+  isRest:      boolean;
+  routineType: { id: number; category: string; description: string | null } | null;
+  exercises:   Exercise[];
+}
+
+/** Emoji por categoría de rutina */
+export const CATEGORY_EMOJI: Record<string, string> = {
+  push:  "💪",
+  pull:  "🏋️",
+  leg:   "🦵",
+  upper: "🔥",
+  lower: "⚡",
+  full:  "🔄",
+};
+
 // ── Catálogo ──────────────────────────────────────────────────────────────────
 
 export interface RoutineType {

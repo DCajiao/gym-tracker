@@ -5,6 +5,7 @@ import { prisma } from "./db.js";
 import routineTypesRouter from "./routes/routineTypes.js";
 import exercisesRouter from "./routes/exercises.js";
 import trainingLogsRouter from "./routes/trainingLogs.js";
+import scheduleRouter from "./routes/schedule.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +14,7 @@ app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:8080" }));
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.use("/api/schedule", scheduleRouter);
 app.use("/api/routine-types", routineTypesRouter);
 app.use("/api/exercises", exercisesRouter);
 app.use("/api/training-logs", trainingLogsRouter);

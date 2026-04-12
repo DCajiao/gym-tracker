@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useHistory } from "@/hooks/useHistory";
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { groupByDate, toDateStr } from "@/lib/training";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar, Dumbbell } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,42 +14,39 @@ import HistoryLogCard from "./HistoryLogCard";
 type FilterType = "all" | "week" | "month" | "custom";
 
 const filters: { key: FilterType; label: string }[] = [
-  { key: "week", label: "Semana" },
-  { key: "month", label: "Mes" },
-  { key: "all", label: "Todo" },
-  { key: "custom", label: "Fecha" },
+  { key: "week",   label: "Semana" },
+  { key: "month",  label: "Mes"    },
+  { key: "all",    label: "Todo"   },
+  { key: "custom", label: "Fecha"  },
 ];
 
 const HistoryPanel = () => {
-  const [filter, setFilter] = useState<FilterType>("week");
+  const [filter, setFilter]         = useState<FilterType>("week");
   const [customDate, setCustomDate] = useState<Date | undefined>(new Date());
-  const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
-  const { data: workoutHistory = [], isLoading } = useHistory();
+  const { data: logs = [], isLoading } = useHistory();
+  const days = useMemo(() => groupByDate(logs), [logs]);
 
-  const filteredLogs = useMemo(() => {
+  const filtered = useMemo(() => {
     const now = new Date();
-    return workoutHistory.filter((log) => {
-      const date = parseISO(log.date);
+    return days.filter(({ date }) => {
+      const d = parseISO(date);
       switch (filter) {
         case "week":
-          return isWithinInterval(date, {
+          return isWithinInterval(d, {
             start: startOfWeek(now, { weekStartsOn: 1 }),
-            end: endOfWeek(now, { weekStartsOn: 1 }),
+            end:   endOfWeek(now,   { weekStartsOn: 1 }),
           });
         case "month":
-          return isWithinInterval(date, {
-            start: startOfMonth(now),
-            end: endOfMonth(now),
-          });
+          return isWithinInterval(d, { start: startOfMonth(now), end: endOfMonth(now) });
         case "custom":
-          if (!customDate) return true;
-          return log.date === format(customDate, "yyyy-MM-dd");
+          return customDate ? date === toDateStr(customDate.toISOString()) : true;
         default:
           return true;
       }
     });
-  }, [filter, customDate]);
+  }, [days, filter, customDate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,19 +99,19 @@ const HistoryPanel = () => {
       <main className="max-w-lg mx-auto px-4 py-4 pb-24">
         {isLoading ? (
           <div className="text-center py-16 text-muted-foreground text-sm">Cargando...</div>
-        ) : filteredLogs.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Dumbbell className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p className="text-sm">No hay entrenamientos en este período</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredLogs.map((log) => (
+            {filtered.map((day) => (
               <HistoryLogCard
-                key={log.date}
-                log={log}
-                isExpanded={expandedLog === log.date}
-                onToggle={() => setExpandedLog(expandedLog === log.date ? null : log.date)}
+                key={day.date}
+                day={day}
+                isExpanded={expandedDay === day.date}
+                onToggle={() => setExpandedDay(expandedDay === day.date ? null : day.date)}
               />
             ))}
           </div>

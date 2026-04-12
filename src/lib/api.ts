@@ -1,4 +1,4 @@
-import type { WorkoutLog } from "@/types/workout";
+import type { DaySchedule, TrainingLog } from "@/types/workout";
 
 const BASE = "/api";
 
@@ -15,10 +15,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  history: {
-    list: (): Promise<WorkoutLog[]> => request("/history"),
-    get: (date: string): Promise<WorkoutLog> => request(`/history/${date}`),
-    save: (log: Omit<WorkoutLog, "id">): Promise<WorkoutLog> =>
-      request("/history", { method: "POST", body: JSON.stringify(log) }),
+  schedule: {
+    get: (): Promise<DaySchedule[]> => request("/schedule"),
+  },
+  trainingLogs: {
+    list: (params?: { date?: string; exerciseId?: number }): Promise<TrainingLog[]> => {
+      const qs = new URLSearchParams();
+      if (params?.date) qs.set("date", params.date);
+      if (params?.exerciseId) qs.set("exerciseId", String(params.exerciseId));
+      return request(`/training-logs${qs.size ? `?${qs}` : ""}`);
+    },
+    save: (log: Omit<TrainingLog, "id">): Promise<TrainingLog> =>
+      request("/training-logs", { method: "POST", body: JSON.stringify(log) }),
   },
 };

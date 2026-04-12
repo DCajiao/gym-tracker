@@ -1,14 +1,12 @@
-import type { DayRoutine } from "@/types/workout";
-
 interface RestDayViewProps {
-  routine: DayRoutine;
+  dayName: string;
 }
 
-const RestDayView = ({ routine }: RestDayViewProps) => {
+const RestDayView = ({ dayName }: RestDayViewProps) => {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-      <span className="text-7xl mb-6">{routine.emoji}</span>
-      <h2 className="text-2xl font-bold mb-2">{routine.routineName}</h2>
+      <span className="text-7xl mb-6">😴</span>
+      <h2 className="text-2xl font-bold mb-2">{dayName} — Descanso</h2>
       <p className="text-muted-foreground max-w-xs">
         Hoy toca recuperar. Descansa, estira, hidrátate y prepárate para la próxima sesión. 💤
       </p>
