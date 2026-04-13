@@ -1,4 +1,4 @@
-import type { DaySchedule, TrainingLog } from "@/types/workout";
+import type { DaySchedule, TrainingLog, RoutineType } from "@/types/workout";
 
 const BASE = "/api";
 
@@ -17,6 +17,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   schedule: {
     get: (): Promise<DaySchedule[]> => request("/schedule"),
+  },
+  routineTypes: {
+    list: (): Promise<RoutineType[]> => request("/routine-types"),
+    update: (id: number, data: Pick<RoutineType, "category" | "daysOfTheWeek" | "description">): Promise<RoutineType> =>
+      request(`/routine-types/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   },
   trainingLogs: {
     list: (params?: { date?: string; exerciseId?: number }): Promise<TrainingLog[]> => {

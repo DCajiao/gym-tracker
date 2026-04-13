@@ -1,6 +1,6 @@
 /** Shared types for the GymTracker app */
 
-export type Tab = "workout" | "history" | "insights";
+export type Tab = "workout" | "history" | "insights" | "settings";
 
 // ── Schedule (semana) ─────────────────────────────────────────────────────────
 

@@ -16,16 +16,18 @@ Este es el flujo que el usuario debería poder hacer de principio a fin. Los pas
 1. Abre la app → ve la pestaña Rutina con el día de hoy resaltado
 2. Confirma el tipo de rutina del día (ej. 💪 push — "Pecho, hombros y tríceps")
 3. Revisa los ejercicios: nombres, músculos, series y reps objetivo
-4. Empieza el primer ejercicio. Expande la tarjeta para ver el detalle
-5. Ejecuta el primer set
-   ⚠️  Registra el peso que levantó (input kg)
-   ⚠️  Marca el set como completado
-   ⚠️  Inicia el temporizador de descanso
-6. Repite para cada set de cada ejercicio
-7. Al terminar todos los ejercicios:
-   ⚠️  Pulsa "Guardar entrenamiento" → los datos se persisten en la BD
-8. Navega a Historial → ve el entrenamiento de hoy recién guardado
-9. Navega a Insights → los stats reflejan el entrenamiento de hoy
+4. Pulsa "Iniciar entrenamiento"
+5. Empieza el primer ejercicio. Expande la tarjeta para ver el detalle
+6. Ejecuta el primer set
+   ⚠️  Registra el peso que levantó (input kg) — pendiente
+   ✅  Marca el set como completado (captura start_time en el primer set)
+   ⚠️  Inicia el temporizador de descanso — pendiente
+7. Repite para cada set del ejercicio
+   ✅  Al completar el último set → se guarda automáticamente en la BD (captura end_time)
+8. Repite para cada ejercicio del día
+9. Pulsa "Terminar entrenamiento" (o sigue hasta completar todos)
+10. Navega a Historial → ve el entrenamiento de hoy recién guardado
+11. Navega a Insights → los stats reflejan el entrenamiento de hoy
 ```
 
 ---
@@ -75,17 +77,19 @@ Este es el flujo que el usuario debería poder hacer de principio a fin. Los pas
 
 ---
 
-### UC-04 — Marcar sets como completados ⚠️ parcial
+### UC-04 — Marcar sets como completados ✅
 
-**Descripción:** Durante el entrenamiento, el usuario marca cada set como completado conforme los ejecuta.
+**Descripción:** Durante una sesión activa, el usuario marca cada set como completado conforme los ejecuta.
 
 **Flujo:**
-1. Con la tarjeta expandida, el usuario ve N filas (una por set)
-2. Toca una fila → el set cambia a verde con ✓
-3. El contador actualiza: "(1/4)", "(2/4)"…
-4. Al completar todos, la tarjeta entera cambia a verde con ✓
+1. El usuario pulsa "Iniciar entrenamiento" → las tarjetas se vuelven interactivas
+2. Con la tarjeta expandida, el usuario ve N filas (una por set)
+3. Toca una fila → el set cambia a verde con ✓; el primer toque captura `start_time`
+4. El contador actualiza: "(1/4)", "(2/4)"…
+5. Al completar todos los sets → captura `end_time` + guarda automáticamente en la BD
+6. La tarjeta entera queda verde/bloqueada con ✓
 
-**Limitación actual:** El estado vive solo en memoria (React state). Si el usuario recarga o cambia de tab, los checks se pierden. No se persiste en la BD.
+**Nota:** Sin sesión activa, las tarjetas son de solo lectura.
 
 ---
 
@@ -134,7 +138,7 @@ Este es el flujo que el usuario debería poder hacer de principio a fin. Los pas
 ### UC-08 — Registrar el peso levantado por set
 **Prioridad: Alta**
 
-El usuario necesita poder ingresar cuántos kg usó en cada set antes de marcarlo como completado. Hoy la tarjeta solo muestra el objetivo de reps, sin campo para el peso.
+El usuario necesita poder ingresar cuántos kg usó en cada set al marcarlo como completado. Hoy el log se guarda con `weight_kg = null`; la BD admite el campo pero el flujo no lo captura aún.
 
 **Flujo esperado:**
 1. Al expandir la tarjeta, cada fila de set tiene un input para `kg`
@@ -143,16 +147,16 @@ El usuario necesita poder ingresar cuántos kg usó en cada set antes de marcarl
 
 ---
 
-### UC-09 — Guardar un entrenamiento completado
-**Prioridad: Alta**
+### UC-09 — Guardar un entrenamiento completado ✅
 
-Hoy no existe ningún mecanismo para persistir lo que el usuario hizo. Es el gap más crítico de la app.
+**Descripción:** Cada ejercicio completado se persiste automáticamente en la BD en el momento en que el usuario marca el último set.
 
-**Flujo esperado:**
-1. El usuario termina (o decide pausar) el entrenamiento
-2. Pulsa un botón "Finalizar entrenamiento" o similar
-3. La app hace POST a `/api/training-logs` con todos los sets marcados
-4. El entrenamiento aparece en Historial e Insights inmediatamente
+**Flujo:**
+1. El usuario inicia sesión con "Iniciar entrenamiento"
+2. Al completar el último set de un ejercicio → POST automático a `/api/training-logs`
+3. El ejercicio queda bloqueado (verde) confirmando el guardado
+4. Al navegar a Historial e Insights los datos aparecen de inmediato
+5. "Terminar entrenamiento" cierra la sesión; los ejercicios ya guardados permanecen
 
 ---
 
@@ -192,6 +196,22 @@ El usuario quiere anotar observaciones durante el entrenamiento (ej. "técnica f
 
 ---
 
+### UC-14 — Configurar la rutina semanal ✅
+**Prioridad: Alta**
+
+El usuario puede asignar qué tipo de rutina (push / pull / leg / upper / etc.) corresponde a cada día de la semana.
+
+**Flujo:**
+1. Navega a la pestaña Ajustes
+2. Ve los 7 días de la semana, cada uno con la rutina actualmente asignada (o "Descanso")
+3. Toca un día → se despliega el selector con todas las rutinas disponibles
+4. Selecciona una rutina o "Descanso"
+5. Repite para los días que quiera cambiar
+6. Pulsa "Guardar cambios" → se actualizan los `days_of_the_week` de los routine_types en la BD
+7. La pestaña Rutina refleja los cambios inmediatamente
+
+---
+
 ### UC-13 — Ver progreso de fuerza por ejercicio
 **Prioridad: Media**
 
@@ -211,13 +231,21 @@ El usuario quiere saber si está progresando en un ejercicio específico a lo la
 | UC-01 | Ver la rutina del día | ✅ Implementado |
 | UC-02 | Navegar entre días | ✅ Implementado |
 | UC-03 | Ver detalle de ejercicio | ✅ Implementado |
-| UC-04 | Marcar sets como completados | ⚠️ Parcial (no persiste) |
+| UC-04 | Marcar sets como completados | ✅ Implementado (persiste en BD) |
 | UC-05 | Ver historial | ✅ Implementado |
 | UC-06 | Filtrar historial | ✅ Implementado |
 | UC-07 | Ver insights | ✅ Implementado |
-| UC-08 | Registrar peso por set | ⛔ Pendiente |
-| UC-09 | Guardar entrenamiento | ⛔ Pendiente |
+| UC-08 | Registrar peso por set | ⛔ Pendiente — `weight_kg` se guarda null |
+| UC-09 | Guardar entrenamiento | ✅ Implementado (auto-save por ejercicio) |
 | UC-10 | Temporizador de descanso | ⛔ Pendiente |
 | UC-11 | Editar / eliminar log | ⛔ Pendiente |
 | UC-12 | Notas por set | ⛔ Pendiente |
 | UC-13 | Progreso de fuerza | ⛔ Pendiente |
+| UC-14 | Configurar rutina semanal | ✅ Implementado |
+
+## Gaps críticos pendientes (por prioridad)
+
+1. **UC-08 — Peso por set** (Alta): el campo existe en la BD y en los tipos, pero el flujo no captura el valor del usuario. Impacta el volumen calculado en Insights (hoy asume kg = 0 en sets sin peso).
+2. **UC-10 — Temporizador** (Media): existe el componente `RestTimer` en el código pero sin integrar.
+3. **UC-11 — Editar log** (Media): el endpoint `DELETE /api/training-logs/:id` ya existe; falta la UI.
+4. **UC-13 — Progreso de fuerza** (Media): requiere gráfico de línea por ejercicio, nuevo endpoint o query filtrada por `exerciseId`.

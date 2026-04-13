@@ -1,5 +1,5 @@
 import type { Tab } from "@/types/workout";
-import { Dumbbell, Clock, BarChart3 } from "lucide-react";
+import { Dumbbell, Clock, BarChart3, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BottomNavProps {
@@ -8,9 +8,10 @@ interface BottomNavProps {
 }
 
 const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-  { key: "workout", label: "Rutina", icon: <Dumbbell className="w-5 h-5" /> },
-  { key: "history", label: "Historial", icon: <Clock className="w-5 h-5" /> },
-  { key: "insights", label: "Insights", icon: <BarChart3 className="w-5 h-5" /> },
+  { key: "workout",  label: "Rutina",    icon: <Dumbbell  className="w-5 h-5" /> },
+  { key: "history",  label: "Historial", icon: <Clock     className="w-5 h-5" /> },
+  { key: "insights", label: "Insights",  icon: <BarChart3 className="w-5 h-5" /> },
+  { key: "settings", label: "Ajustes",   icon: <Settings  className="w-5 h-5" /> },
 ];
 
 const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {

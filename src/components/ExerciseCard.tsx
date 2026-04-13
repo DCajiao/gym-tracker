@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Exercise } from "@/types/workout";
-import { Check, ChevronDown, ChevronUp, Dumbbell } from "lucide-react";
+import { useWorkoutSession } from "@/context/WorkoutSessionContext";
+import { Check, ChevronDown, ChevronUp, Dumbbell, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ExerciseCardProps {
@@ -10,16 +11,19 @@ interface ExerciseCardProps {
 
 const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
-  const [completedSets, setCompletedSets] = useState<boolean[]>(
-    new Array(exercise.series).fill(false)
-  );
+  const { isActive, toggleSet, getProgress } = useWorkoutSession();
 
-  const toggleSet = (i: number) =>
-    setCompletedSets((prev) => prev.map((v, j) => (j === i ? !v : v)));
+  const progress    = getProgress(exercise.id);
+  const sets        = progress?.sets ?? new Array(exercise.series).fill(false);
+  const saved       = progress?.saved ?? false;
+  const completedCount = sets.filter(Boolean).length;
+  const allDone     = completedCount === exercise.series;
+  const muscleTags  = exercise.muscleTags.split(",").map((t) => t.trim());
 
-  const completedCount = completedSets.filter(Boolean).length;
-  const allDone = completedCount === exercise.series;
-  const muscleTags = exercise.muscleTags.split(",").map((t) => t.trim());
+  const handleSetClick = (si: number) => {
+    if (!isActive || saved) return;
+    toggleSet(exercise.id, si, exercise);
+  };
 
   return (
     <div
@@ -39,7 +43,13 @@ const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
             allDone ? "bg-success/20 text-success" : "bg-primary/10 text-primary"
           )}
         >
-          {allDone ? <Check className="w-5 h-5" /> : index + 1}
+          {saved ? (
+            <Check className="w-5 h-5" />
+          ) : allDone ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            index + 1
+          )}
         </div>
 
         <div className="flex-1 text-left min-w-0">
@@ -52,7 +62,7 @@ const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
             {muscleTags.length > 1 && ` +${muscleTags.length - 1}`}
             {" · "}
             {exercise.series} series × {exercise.repetitions} reps
-            {completedCount > 0 && (
+            {isActive && completedCount > 0 && (
               <span className="text-primary font-medium">
                 ({completedCount}/{exercise.series})
               </span>
@@ -96,13 +106,15 @@ const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
               <span />
             </div>
 
-            {completedSets.map((done, si) => (
+            {sets.map((done, si) => (
               <button
                 key={si}
-                onClick={() => toggleSet(si)}
+                onClick={() => handleSetClick(si)}
+                disabled={!isActive || saved}
                 className={cn(
                   "grid grid-cols-[2rem_1fr_2.5rem] gap-2 items-center w-full rounded-lg px-2 py-2.5 transition-all text-sm",
-                  done ? "bg-success/10 text-success" : "bg-secondary/30 text-foreground"
+                  done ? "bg-success/10 text-success" : "bg-secondary/30 text-foreground",
+                  (!isActive || saved) && "cursor-default opacity-80"
                 )}
               >
                 <span className="font-medium text-xs text-muted-foreground">{si + 1}</span>
