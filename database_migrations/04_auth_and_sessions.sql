@@ -1,2 +1,0 @@
--- Las tablas users y workout_sessions se crean en 00_schema.sql desde el inicio.
--- Este archivo existe solo para mantener la numeración y no romper el runner.
