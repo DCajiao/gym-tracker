@@ -33,7 +33,6 @@ const InsightsPanel = () => {
       ? ((thisWeekVolume - lastWeekVolume) / lastWeekVolume) * 100
       : 0;
 
-    // Muscle distribution — count sets per muscle tag
     const muscleMap: Record<string, number> = {};
     for (const day of days) {
       for (const ex of day.exercises) {
@@ -45,7 +44,6 @@ const InsightsPanel = () => {
     const muscleGroups = Object.entries(muscleMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const maxMuscle    = muscleGroups[0]?.[1] ?? 1;
 
-    // Streak — consecutive training days (most recent first)
     let streak = 0;
     const dateSet = new Set(days.map((d) => d.date));
     const cursor  = new Date(now);
@@ -54,12 +52,11 @@ const InsightsPanel = () => {
       if (dateSet.has(dateStr)) {
         streak++;
       } else if (i > 0) {
-        break; // gap found — streak ends
+        break;
       }
       cursor.setDate(cursor.getDate() - 1);
     }
 
-    // Weekly volume chart (last 4 weeks)
     const weeklyVolumes = Array.from({ length: 4 }, (_, w) => {
       const offset = 3 - w;
       const ws  = startOfWeek(subWeeks(now, offset), { weekStartsOn: 1 });
@@ -92,14 +89,23 @@ const InsightsPanel = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageHeader>
-        <h1 className="text-lg font-bold flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-primary" />
-          Insights
-        </h1>
-        <p className="text-xs text-muted-foreground">Tu progreso y estadísticas</p>
+          <div>
+            <h1
+              className="text-xl font-bold leading-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+            >
+              INSIGHTS
+            </h1>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
+              Tu progreso
+            </p>
+          </div>
+        </div>
       </PageHeader>
 
-      <main className="max-w-lg mx-auto px-4 py-4 pb-24 space-y-4">
+      <main className="max-w-lg mx-auto px-4 py-4 pb-24 space-y-3">
         {(isLoading || !insights) && (
           <div className="text-center py-16 text-muted-foreground text-sm">Cargando...</div>
         )}
@@ -107,7 +113,7 @@ const InsightsPanel = () => {
         {insights && (
           <>
             {/* Top Stats */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5">
               <StatCard
                 icon={<Flame className="w-4 h-4" />}
                 label="Volumen Semanal"
@@ -128,49 +134,80 @@ const InsightsPanel = () => {
               <StatCard
                 icon={<Trophy className="w-4 h-4" />}
                 label="Racha Actual"
-                value={`${insights.streak} días`}
+                value={`${insights.streak}d`}
               />
             </div>
 
             {/* Weekly Volume Chart */}
             <div className="glass-card p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                Volumen Semanal (últimas 4 semanas)
-              </h3>
-              <div className="flex items-end gap-3 h-32">
-                {insights.weeklyVolumes.map((w, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground font-medium">
-                      {(w.value / 1000).toFixed(1)}t
-                    </span>
-                    <div
-                      className={cn(
-                        "w-full rounded-t-lg transition-all",
-                        i === insights.weeklyVolumes.length - 1 ? "bg-primary" : "bg-secondary"
+                <h3
+                  className="text-sm font-bold uppercase tracking-wide"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
+                >
+                  Volumen — Últimas 4 semanas
+                </h3>
+              </div>
+              <div className="flex items-end gap-2 h-28">
+                {insights.weeklyVolumes.map((w, i) => {
+                  const isCurrentWeek = i === insights.weeklyVolumes.length - 1;
+                  const heightPct     = Math.max((w.value / insights.maxWeeklyVol) * 100, 4);
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      {w.value > 0 && (
+                        <span className="text-[9px] text-muted-foreground font-semibold">
+                          {(w.value / 1000).toFixed(1)}t
+                        </span>
                       )}
-                      style={{ height: `${(w.value / insights.maxWeeklyVol) * 100}%`, minHeight: 4 }}
-                    />
-                    <span className="text-[10px] text-muted-foreground">{w.label}</span>
-                  </div>
-                ))}
+                      <div className="w-full flex-1 flex items-end">
+                        <div
+                          className={cn(
+                            "w-full rounded-t transition-all",
+                            isCurrentWeek ? "bg-primary" : "bg-secondary"
+                          )}
+                          style={{ height: `${heightPct}%` }}
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          "text-[9px] font-bold uppercase tracking-wider",
+                          isCurrentWeek ? "text-primary" : "text-muted-foreground"
+                        )}
+                        style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                      >
+                        {w.label}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             {/* Muscle Distribution */}
             <div className="glass-card p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-4">
                 <Zap className="w-4 h-4 text-primary" />
-                Distribución Muscular
-              </h3>
-              <div className="space-y-2.5">
+                <h3
+                  className="text-sm font-bold uppercase tracking-wide"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
+                >
+                  Distribución Muscular
+                </h3>
+              </div>
+              <div className="space-y-3">
                 {insights.muscleGroups.map(([group, count]) => (
                   <div key={group}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-muted-foreground capitalize">{group}</span>
-                      <span className="font-medium">{count} sets</span>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span
+                        className="font-bold capitalize uppercase tracking-wide"
+                        style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                      >
+                        {group}
+                      </span>
+                      <span className="font-semibold text-muted-foreground">{count} sets</span>
                     </div>
-                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                       <div
                         className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${(count / insights.maxMuscle) * 100}%` }}
@@ -182,11 +219,13 @@ const InsightsPanel = () => {
             </div>
 
             {/* Summary */}
-            <div className="glass-card p-4 text-center">
-              <p className="text-xs text-muted-foreground mb-1">Días de entrenamiento registrados</p>
-              <p className="text-3xl font-bold text-primary">{insights.totalDays}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {insights.totalSets} sets en total
+            <div className="glass-card p-5 text-center accent-border-l">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                Días de entrenamiento
+              </p>
+              <p className="stat-number text-5xl text-primary">{insights.totalDays}</p>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                {insights.totalSets} sets registrados
               </p>
             </div>
           </>

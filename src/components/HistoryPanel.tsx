@@ -56,10 +56,15 @@ const HistoryPanel = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageHeader>
-        <h1 className="text-lg font-bold flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3">
           <Calendar className="w-5 h-5 text-primary" />
-          Historial
-        </h1>
+          <h1
+            className="text-xl font-bold uppercase tracking-tight leading-none"
+            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+          >
+            Historial
+          </h1>
+        </div>
 
         <div className="flex gap-2 overflow-x-auto pb-0.5">
           {filters.map((f) => (
@@ -67,11 +72,12 @@ const HistoryPanel = () => {
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0",
+                "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shrink-0",
                 filter === f.key
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
               )}
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
             >
               {f.label}
             </button>

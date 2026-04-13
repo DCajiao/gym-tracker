@@ -74,11 +74,20 @@ const ScheduleEditor = () => {
   return (
     <div className="min-h-screen bg-background">
       <PageHeader>
-        <h1 className="text-lg font-bold flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <Settings className="w-5 h-5 text-primary" />
-          Configurar Rutina
-        </h1>
-        <p className="text-xs text-muted-foreground">Asigna una rutina a cada día de la semana</p>
+          <div>
+            <h1
+              className="text-xl font-bold uppercase tracking-tight leading-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+            >
+              Ajustes
+            </h1>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
+              Asigna rutina por día
+            </p>
+          </div>
+        </div>
       </PageHeader>
 
       <main className="max-w-lg mx-auto px-4 py-4 pb-28 space-y-2">
@@ -98,15 +107,23 @@ const ScheduleEditor = () => {
                     onClick={() => setExpandedDay(isExpanded ? null : day.index)}
                     className="w-full flex items-center gap-3 p-4"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-muted-foreground">{day.short}</span>
+                    <div
+                      className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0"
+                      style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: "0.875rem" }}
+                    >
+                      <span className="font-bold text-muted-foreground uppercase tracking-wide">{day.short}</span>
                     </div>
 
                     <div className="flex-1 text-left min-w-0">
-                      <p className="text-sm font-semibold">{day.name}</p>
+                      <p
+                        className="font-bold text-sm uppercase tracking-wide"
+                        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
+                      >
+                        {day.name}
+                      </p>
                       {assignedRt ? (
                         <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wider">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold uppercase tracking-wide">
                             {assignedRt.category}
                           </span>
                           <span className="text-xs text-muted-foreground truncate">
@@ -114,7 +131,7 @@ const ScheduleEditor = () => {
                           </span>
                         </div>
                       ) : (
-                        <p className="text-xs text-muted-foreground mt-0.5">😴 Descanso</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 font-medium">Descanso</p>
                       )}
                     </div>
 
@@ -182,11 +199,12 @@ const ScheduleEditor = () => {
                 onClick={handleSave}
                 disabled={!dirty || saving}
                 className={cn(
-                  "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all",
+                  "w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm uppercase tracking-widest transition-all",
                   dirty && !saving
                     ? "bg-primary text-primary-foreground active:scale-95"
                     : "bg-secondary text-muted-foreground cursor-default"
                 )}
+                style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.1em" }}
               >
                 {saving
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>

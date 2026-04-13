@@ -1,5 +1,4 @@
 import type { DaySchedule } from "@/types/workout";
-import { CATEGORY_EMOJI } from "@/types/workout";
 import { cn } from "@/lib/utils";
 
 interface DaySelectorProps {
@@ -11,28 +10,43 @@ interface DaySelectorProps {
 
 const DaySelector = ({ days, selectedDay, onSelectDay, todayIndex }: DaySelectorProps) => {
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-2 px-1 scrollbar-hide">
+    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
       {days.map((day, i) => {
-        const emoji = day.isRest
-          ? "😴"
-          : CATEGORY_EMOJI[day.routineType?.category ?? ""] ?? "🏋️";
+        const isSelected = selectedDay === i;
+        const isToday    = i === todayIndex;
+        const label      = day.isRest ? "REST" : (day.routineType?.category ?? "—").toUpperCase();
 
         return (
           <button
             key={day.dayName}
             onClick={() => onSelectDay(i)}
             className={cn(
-              "flex flex-col items-center min-w-[3rem] px-2 py-2.5 rounded-xl transition-all duration-200",
-              "text-xs font-medium",
-              selectedDay === i
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                : i === todayIndex
-                ? "bg-secondary text-foreground ring-1 ring-primary/30"
-                : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+              "flex flex-col items-center min-w-[3.25rem] px-2.5 py-2 rounded-lg transition-all duration-200 shrink-0",
+              isSelected
+                ? "bg-primary text-primary-foreground"
+                : isToday
+                ? "bg-secondary text-foreground ring-1 ring-primary/40"
+                : "bg-secondary/60 text-muted-foreground hover:bg-secondary"
             )}
           >
-            <span className="text-[10px] uppercase tracking-wider">{day.dayShort}</span>
-            <span className="text-base mt-0.5">{emoji}</span>
+            <span
+              className={cn(
+                "text-[9px] font-semibold uppercase tracking-widest",
+                isSelected ? "text-primary-foreground/70" : "text-muted-foreground"
+              )}
+            >
+              {day.dayShort}
+            </span>
+            <span
+              className={cn(
+                "text-[10px] font-bold uppercase tracking-wide mt-0.5 leading-none",
+                "font-display",
+                isSelected ? "text-primary-foreground" : isToday ? "text-primary" : ""
+              )}
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
+            >
+              {label}
+            </span>
           </button>
         );
       })}

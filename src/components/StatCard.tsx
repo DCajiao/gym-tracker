@@ -10,20 +10,18 @@ interface StatCardProps {
 
 const StatCard = ({ icon, label, value, change, subtitle }: StatCardProps) => {
   return (
-    <div className="glass-card p-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-          {icon}
-        </div>
+    <div className="glass-card p-4 flex flex-col gap-1 accent-border-l">
+      <div className="flex items-center gap-1.5 text-primary mb-1">
+        {icon}
       </div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-xl font-bold mt-0.5">{value}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="stat-number text-3xl">{value}</p>
       {change !== undefined && change !== 0 && (
-        <p className={cn("text-[10px] font-medium mt-1", change > 0 ? "text-success" : "text-destructive")}>
-          {change > 0 ? "↑" : "↓"} {Math.abs(change).toFixed(0)}% vs anterior
+        <p className={cn("text-[10px] font-semibold mt-0.5", change > 0 ? "text-success" : "text-destructive")}>
+          {change > 0 ? "▲" : "▼"} {Math.abs(change).toFixed(0)}%
         </p>
       )}
-      {subtitle && <p className="text-[10px] text-muted-foreground mt-1">{subtitle}</p>}
+      {subtitle && <p className="text-[10px] text-muted-foreground">{subtitle}</p>}
     </div>
   );
 };

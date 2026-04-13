@@ -34,34 +34,49 @@ const CompletedTodayView = ({
   }, [logs]);
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-5">
-      <div className="w-20 h-20 rounded-full bg-success/15 flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center py-16 px-6 text-center space-y-6">
+      {/* Icon */}
+      <div className="w-20 h-20 rounded-full bg-success/15 border border-success/25 flex items-center justify-center">
         <CheckCircle2 className="w-10 h-10 text-success" />
       </div>
 
+      {/* Heading */}
       <div>
-        <h2 className="text-xl font-bold">¡Entreno completado!</h2>
+        <h2
+          className="text-4xl font-black uppercase tracking-tight text-success"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900 }}
+        >
+          Completado
+        </h2>
         <p className="text-sm text-muted-foreground mt-1">
           {format(new Date(), "EEEE d 'de' MMMM", { locale: es })}
         </p>
       </div>
 
+      {/* Stats */}
       {summary && (
-        <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-          <div className="glass-card p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{summary.exercises.length}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">ejercicios</p>
+        <div className="grid grid-cols-2 gap-2.5 w-full max-w-xs">
+          <div className="glass-card p-4 text-center accent-border-l">
+            <p className="stat-number text-4xl text-primary">{summary.exercises.length}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mt-1">
+              Ejercicios
+            </p>
           </div>
-          <div className="glass-card p-3 text-center">
-            <p className="text-2xl font-bold text-primary">{summary.totalSets}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">series</p>
+          <div className="glass-card p-4 text-center accent-border-l">
+            <p className="stat-number text-4xl text-primary">{summary.totalSets}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mt-1">
+              Series
+            </p>
           </div>
           {summary.totalVolume > 0 && (
-            <div className="glass-card p-3 text-center col-span-2">
-              <p className="text-2xl font-bold text-primary">
-                {(summary.totalVolume / 1000).toFixed(1)}t
+            <div className="glass-card p-4 text-center col-span-2 accent-border-l">
+              <p className="stat-number text-4xl text-primary">
+                {(summary.totalVolume / 1000).toFixed(1)}
+                <span className="text-lg text-muted-foreground">t</span>
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">volumen total</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mt-1">
+                Volumen total
+              </p>
             </div>
           )}
         </div>
@@ -69,9 +84,10 @@ const CompletedTodayView = ({
 
       <button
         onClick={onViewDetails}
-        className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm active:scale-95 transition-all"
+        className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-widest active:scale-95 transition-all"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.1em" }}
       >
-        Ver detalles
+        Ver historial
       </button>
     </div>
   );
@@ -88,7 +104,6 @@ const WorkoutTab = ({ onViewTodayDetails }: { onViewTodayDetails: () => void }) 
   const { isActive, isRestoring, startSession, endSession } = useWorkoutSession();
   const { user, logout } = useAuth();
 
-  // Detectar si ya hubo entreno hoy (logs del día de hoy)
   const { data: todayLogs = [], isLoading: loadingToday } = useHistory({ date: TODAY });
   const completedToday = todayLogs.length > 0 && !isActive && !isRestoring;
 
@@ -103,30 +118,40 @@ const WorkoutTab = ({ onViewTodayDetails }: { onViewTodayDetails: () => void }) 
   return (
     <>
       <PageHeader>
+        {/* Top bar */}
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-lg font-bold flex items-center gap-2">
-              <Dumbbell className="w-5 h-5 text-primary" />
+            <h1
+              className="text-2xl font-black uppercase tracking-tight leading-none"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900 }}
+            >
               GymTracker
             </h1>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest mt-0.5">
+              {user?.email}
+            </p>
           </div>
+
           <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">
-                {isToday ? "Hoy" : day?.dayName ?? ""}
+            {/* Category badge */}
+            {day?.routineType && (
+              <div className="text-right">
+                <p
+                  className="text-xs font-bold uppercase tracking-widest text-primary leading-none"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
+                >
+                  {day.routineType.category}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {isToday ? "hoy" : day.dayName}
+                </p>
+              </div>
+            )}
+            {!day?.routineType && (
+              <p className="text-sm font-semibold text-muted-foreground">
+                {isToday ? "hoy" : day?.dayName ?? ""}
               </p>
-              {day?.routineType ? (
-                <div className="flex items-center justify-end gap-2 mt-0.5">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold uppercase tracking-wider">
-                    {day.routineType.category}
-                  </span>
-                  <span className="text-lg">{emoji}</span>
-                </div>
-              ) : (
-                <p className="text-sm font-semibold text-muted-foreground">{emoji} Descanso</p>
-              )}
-            </div>
+            )}
             <button
               onClick={logout}
               title="Cerrar sesión"
@@ -137,8 +162,9 @@ const WorkoutTab = ({ onViewTodayDetails }: { onViewTodayDetails: () => void }) 
           </div>
         </div>
 
+        {/* Day selector */}
         {isLoading ? (
-          <div className="h-14 flex items-center text-xs text-muted-foreground">
+          <div className="h-12 flex items-center text-xs text-muted-foreground">
             Cargando rutina...
           </div>
         ) : schedule ? (
@@ -151,43 +177,47 @@ const WorkoutTab = ({ onViewTodayDetails }: { onViewTodayDetails: () => void }) 
         ) : null}
       </PageHeader>
 
-      <main className="max-w-lg mx-auto px-4 py-4 pb-20">
+      <main className="max-w-lg mx-auto px-4 py-4 pb-24">
         {isLoading || loadingToday ? null : day?.isRest ? (
           <RestDayView dayName={day.dayName} />
         ) : isToday && completedToday ? (
-          // ── Entreno del día ya completado ──
           <CompletedTodayView onViewDetails={onViewTodayDetails} />
         ) : (
           <>
             {/* Routine type banner */}
             {day?.routineType && (
-              <div className="glass-card px-4 py-3 mb-4 flex items-center gap-3">
+              <div className="glass-card px-4 py-3 mb-4 flex items-center gap-3 accent-border-l">
                 <span className="text-3xl">{emoji}</span>
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
+                  <p
+                    className="text-xs font-bold uppercase tracking-widest text-primary leading-none"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
+                  >
                     {day.routineType.category}
                   </p>
-                  <p className="text-sm font-semibold leading-tight">
+                  <p className="text-sm font-semibold leading-tight mt-0.5">
                     {day.routineType.description}
                   </p>
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3 mb-5">
-              <StatCard icon={<Target className="w-4 h-4" />} label="Ejercicios" value={`${totalExercises}`} />
+            {/* Stats row */}
+            <div className="grid grid-cols-2 gap-2.5 mb-4">
+              <StatCard icon={<Target className="w-4 h-4" />} label="Ejercicios"   value={`${totalExercises}`} />
               <StatCard icon={<Flame  className="w-4 h-4" />} label="Series Total" value={`${totalSets}`} />
             </div>
 
             {/* Session control */}
             {isRestoring ? (
-              <div className="w-full mb-4 py-3 rounded-xl bg-secondary/30 text-center text-xs text-muted-foreground">
+              <div className="w-full mb-4 py-3 rounded-xl bg-secondary/40 text-center text-xs text-muted-foreground font-semibold uppercase tracking-widest">
                 Recuperando sesión...
               </div>
             ) : canStart ? (
               <button
                 onClick={() => day?.exercises && startSession(day.exercises)}
-                className="w-full mb-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm transition-all active:scale-95"
+                className="w-full mb-4 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm uppercase tracking-widest transition-all active:scale-95"
+                style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.1em" }}
               >
                 <Play className="w-4 h-4" />
                 Iniciar entrenamiento
@@ -195,14 +225,16 @@ const WorkoutTab = ({ onViewTodayDetails }: { onViewTodayDetails: () => void }) 
             ) : showEnd ? (
               <button
                 onClick={endSession}
-                className="w-full mb-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 font-semibold text-sm transition-all active:scale-95"
+                className="w-full mb-4 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-destructive/10 text-destructive border border-destructive/25 font-bold text-sm uppercase tracking-widest transition-all active:scale-95"
+                style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.1em" }}
               >
                 <Square className="w-4 h-4" />
                 Terminar entrenamiento
               </button>
             ) : null}
 
-            <div className="space-y-3">
+            {/* Exercise cards */}
+            <div className="space-y-2.5">
               {day?.exercises.map((exercise, i) => (
                 <ExerciseCard key={exercise.id} exercise={exercise} index={i} />
               ))}
