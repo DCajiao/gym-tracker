@@ -2,11 +2,15 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
+  useRef,
   useCallback,
   type ReactNode,
 } from "react";
 import { format } from "date-fns";
 import type { Exercise } from "@/types/workout";
+import type { SessionStatePayload } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useSaveExerciseLog } from "@/hooks/useSaveExerciseLog";
 
 interface ExerciseProgress {
@@ -24,6 +28,7 @@ interface SessionState {
 
 interface WorkoutSessionContextValue {
   isActive: boolean;
+  isRestoring: boolean;
   startSession: (exercises: Exercise[]) => void;
   endSession: () => void;
   toggleSet: (exerciseId: number, setIndex: number, exercise: Exercise) => void;
@@ -32,9 +37,53 @@ interface WorkoutSessionContextValue {
 
 const WorkoutSessionContext = createContext<WorkoutSessionContextValue | null>(null);
 
+// Debounce delay for syncing state to DB (ms)
+const SYNC_DELAY = 600;
+
 export const WorkoutSessionProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<SessionState | null>(null);
-  const saveLog = useSaveExerciseLog();
+  const [session, setSession]       = useState<SessionState | null>(null);
+  const [isRestoring, setIsRestoring] = useState(true);
+  const saveLog  = useSaveExerciseLog();
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Restore active session from DB on mount ───────────────────────────────
+  useEffect(() => {
+    api.workoutSessions.getActive()
+      .then((record) => {
+        if (record?.isActive && record.state) {
+          const payload = record.state as SessionStatePayload;
+          setSession({
+            isActive: true,
+            date: payload.date,
+            exercises: payload.exercises as Record<number, ExerciseProgress>,
+          });
+        }
+      })
+      .catch(() => { /* auth not ready yet or no session */ })
+      .finally(() => setIsRestoring(false));
+  }, []);
+
+  // ── Debounced sync to DB whenever session changes ─────────────────────────
+  useEffect(() => {
+    if (!session?.isActive) return;
+
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      const payload: SessionStatePayload = {
+        date: session.date,
+        exercises: session.exercises,
+      };
+      api.workoutSessions.upsertActive(session.date, payload).catch(() => {
+        // Silent fail — state is still in memory
+      });
+    }, SYNC_DELAY);
+
+    return () => {
+      if (syncTimer.current) clearTimeout(syncTimer.current);
+    };
+  }, [session]);
+
+  // ── Actions ───────────────────────────────────────────────────────────────
 
   const startSession = useCallback((exercises: Exercise[]) => {
     const exerciseMap: Record<number, ExerciseProgress> = {};
@@ -54,6 +103,7 @@ export const WorkoutSessionProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   const endSession = useCallback(() => {
+    api.workoutSessions.endActive().catch(() => {});
     setSession(null);
   }, []);
 
@@ -126,7 +176,14 @@ export const WorkoutSessionProvider = ({ children }: { children: ReactNode }) =>
 
   return (
     <WorkoutSessionContext.Provider
-      value={{ isActive: session?.isActive ?? false, startSession, endSession, toggleSet, getProgress }}
+      value={{
+        isActive: session?.isActive ?? false,
+        isRestoring,
+        startSession,
+        endSession,
+        toggleSet,
+        getProgress,
+      }}
     >
       {children}
     </WorkoutSessionContext.Provider>

@@ -6,40 +6,66 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  passwordHash    String           @map("password_hash")
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  workoutSessions WorkoutSession[]
+  trainingLogs    TrainingLog[]
+
+  @@map("users")
+}
+
+model WorkoutSession {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  sessionDate DateTime @map("session_date") @db.Date
+  state       Json     @default("{}")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("workout_sessions")
+}
+
 model RoutineType {
-  id              Int        @id @default(autoincrement())
-  category        String
-  daysOfTheWeek   String     @map("days_of_the_week")
-  description     String?
-  exercises       Exercise[]
+  id            Int        @id @default(autoincrement())
+  category      String
+  daysOfTheWeek String     @map("days_of_the_week")
+  description   String?
+  exercises     Exercise[]
 
   @@map("routine_type")
 }
 
 model Exercise {
-  id               Int           @id @default(autoincrement())
-  name             String
-  description      String?
-  series           Int
-  repetitions      Int
-  muscleTags       String        @map("muscle_tags")
-  routineTypeIdFk  Int?          @map("routine_type_id_fk")
-  routineType      RoutineType?  @relation(fields: [routineTypeIdFk], references: [id])
-  trainingLogs     TrainingLog[]
+  id              Int           @id @default(autoincrement())
+  name            String
+  description     String?
+  series          Int
+  repetitions     Int
+  muscleTags      String        @map("muscle_tags")
+  routineTypeIdFk Int?          @map("routine_type_id_fk")
+  routineType     RoutineType?  @relation(fields: [routineTypeIdFk], references: [id])
+  trainingLogs    TrainingLog[]
 
   @@map("exercises")
 }
 
 model TrainingLog {
-  id               Int       @id @default(autoincrement())
-  exerciseIdFk     Int?      @map("exercise_id_fk")
-  exercise         Exercise? @relation(fields: [exerciseIdFk], references: [id])
-  weightKg         Decimal?  @map("weight_kg") @db.Decimal(6, 2)
-  repetitionsDone  Int       @map("repetitions_done")
-  trainingDate     DateTime  @map("training_date") @db.Date
-  startTime        DateTime? @map("start_time") @db.Time(6)
-  endTime          DateTime? @map("end_time") @db.Time(6)
-  exerciseDetails  Json      @map("exercise_details")
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseIdFk    Int?      @map("exercise_id_fk")
+  exercise        Exercise? @relation(fields: [exerciseIdFk], references: [id])
+  weightKg        Decimal?  @map("weight_kg") @db.Decimal(6, 2)
+  repetitionsDone Int       @map("repetitions_done")
+  trainingDate    DateTime  @map("training_date") @db.Date
+  startTime       DateTime? @map("start_time") @db.Time(6)
+  endTime         DateTime? @map("end_time") @db.Time(6)
+  exerciseDetails Json      @map("exercise_details")
 
   @@map("training_logs")
 }
