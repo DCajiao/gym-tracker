@@ -13,11 +13,12 @@ import type { SessionStatePayload } from "@/lib/api";
 import { api } from "@/lib/api";
 import { useSaveExerciseLog } from "@/hooks/useSaveExerciseLog";
 
-interface ExerciseProgress {
+export interface ExerciseProgress {
   sets: boolean[];
   startTime: string | null;
   endTime: string | null;
   saved: boolean;
+  weight: number | null;
 }
 
 interface SessionState {
@@ -32,19 +33,23 @@ interface WorkoutSessionContextValue {
   startSession: (exercises: Exercise[]) => void;
   endSession: () => void;
   toggleSet: (exerciseId: number, setIndex: number, exercise: Exercise) => void;
+  setExerciseWeight: (exerciseId: number, weight: number | null) => void;
   getProgress: (exerciseId: number) => ExerciseProgress | undefined;
 }
 
 const WorkoutSessionContext = createContext<WorkoutSessionContextValue | null>(null);
 
-// Debounce delay for syncing state to DB (ms)
-const SYNC_DELAY = 600;
+function syncSession(state: SessionState) {
+  const payload: SessionStatePayload = { date: state.date, exercises: state.exercises };
+  api.workoutSessions.upsertActive(state.date, payload).catch(() => {});
+}
 
 export const WorkoutSessionProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession]       = useState<SessionState | null>(null);
+  const [session, setSession]         = useState<SessionState | null>(null);
   const [isRestoring, setIsRestoring] = useState(true);
-  const saveLog  = useSaveExerciseLog();
-  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionRef  = useRef<SessionState | null>(null);
+  const weightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveLog     = useSaveExerciseLog();
 
   // ── Restore active session from DB on mount ───────────────────────────────
   useEffect(() => {
@@ -52,36 +57,18 @@ export const WorkoutSessionProvider = ({ children }: { children: ReactNode }) =>
       .then((record) => {
         if (record?.isActive && record.state) {
           const payload = record.state as SessionStatePayload;
-          setSession({
+          const restored: SessionState = {
             isActive: true,
             date: payload.date,
             exercises: payload.exercises as Record<number, ExerciseProgress>,
-          });
+          };
+          sessionRef.current = restored;
+          setSession(restored);
         }
       })
-      .catch(() => { /* auth not ready yet or no session */ })
+      .catch(() => {})
       .finally(() => setIsRestoring(false));
   }, []);
-
-  // ── Debounced sync to DB whenever session changes ─────────────────────────
-  useEffect(() => {
-    if (!session?.isActive) return;
-
-    if (syncTimer.current) clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(() => {
-      const payload: SessionStatePayload = {
-        date: session.date,
-        exercises: session.exercises,
-      };
-      api.workoutSessions.upsertActive(session.date, payload).catch(() => {
-        // Silent fail — state is still in memory
-      });
-    }, SYNC_DELAY);
-
-    return () => {
-      if (syncTimer.current) clearTimeout(syncTimer.current);
-    };
-  }, [session]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -93,85 +80,126 @@ export const WorkoutSessionProvider = ({ children }: { children: ReactNode }) =>
         startTime: null,
         endTime: null,
         saved: false,
+        weight: ex.defaultWeight != null ? Number(ex.defaultWeight) : null,
       };
     }
-    setSession({
+    const newState: SessionState = {
       isActive: true,
       date: format(new Date(), "yyyy-MM-dd"),
       exercises: exerciseMap,
-    });
+    };
+    sessionRef.current = newState;
+    setSession(newState);
+    syncSession(newState); // crear inmediatamente en DB
   }, []);
 
   const endSession = useCallback(() => {
     api.workoutSessions.endActive().catch(() => {});
+    sessionRef.current = null;
     setSession(null);
   }, []);
 
   const toggleSet = useCallback(
     (exerciseId: number, setIndex: number, exercise: Exercise) => {
-      setSession((prev) => {
-        if (!prev) return prev;
-        const progress = prev.exercises[exerciseId];
-        if (!progress || progress.saved) return prev;
+      const prev = sessionRef.current;
+      if (!prev) return;
+      const progress = prev.exercises[exerciseId];
+      if (!progress || progress.saved) return;
 
-        const now = format(new Date(), "HH:mm:ss");
-        const newSets = progress.sets.map((v, i) => (i === setIndex ? !v : v));
-        const isFirstSet = !progress.startTime && newSets.some(Boolean);
-        const allDone = newSets.every(Boolean);
+      const now        = format(new Date(), "HH:mm:ss");
+      const newSets    = progress.sets.map((v, i) => (i === setIndex ? !v : v));
+      const isFirstSet = !progress.startTime && newSets.some(Boolean);
+      const allDone    = newSets.every(Boolean);
 
-        const updated: ExerciseProgress = {
-          ...progress,
-          sets: newSets,
-          startTime: isFirstSet ? now : progress.startTime,
-          endTime: allDone ? now : progress.endTime,
-        };
+      const updated: ExerciseProgress = {
+        ...progress,
+        sets:      newSets,
+        startTime: isFirstSet ? now : progress.startTime,
+        endTime:   allDone    ? now : progress.endTime,
+      };
 
-        if (allDone) {
-          saveLog.mutate(
-            {
-              exerciseIdFk: exerciseId,
-              weightKg: null,
-              repetitionsDone: exercise.series * exercise.repetitions,
-              trainingDate: prev.date,
-              startTime: updated.startTime,
-              endTime: updated.endTime,
-              exerciseDetails: {
-                name: exercise.name,
-                description: exercise.description ?? null,
-                series: exercise.series,
-                repetitions: exercise.repetitions,
-                muscleTags: exercise.muscleTags,
-              },
+      const newState: SessionState = {
+        ...prev,
+        exercises: { ...prev.exercises, [exerciseId]: updated },
+      };
+
+      // Sync inmediato a DB — esto es lo que garantiza que un refresh no pierda datos
+      sessionRef.current = newState;
+      setSession(newState);
+      syncSession(newState);
+
+      if (allDone) {
+        saveLog.mutate(
+          {
+            exerciseIdFk:    exerciseId,
+            weightKg:        updated.weight,
+            repetitionsDone: exercise.series * exercise.repetitions,
+            trainingDate:    prev.date,
+            startTime:       updated.startTime,
+            endTime:         updated.endTime,
+            exerciseDetails: {
+              name:        exercise.name,
+              description: exercise.description ?? null,
+              series:      exercise.series,
+              repetitions: exercise.repetitions,
+              muscleTags:  exercise.muscleTags,
             },
-            {
-              onSuccess: () => {
-                setSession((s) => {
-                  if (!s) return s;
-                  return {
-                    ...s,
-                    exercises: {
-                      ...s.exercises,
-                      [exerciseId]: { ...s.exercises[exerciseId], saved: true },
-                    },
-                  };
-                });
-              },
-            }
-          );
-        }
-
-        return {
-          ...prev,
-          exercises: { ...prev.exercises, [exerciseId]: updated },
-        };
-      });
+          },
+          {
+            onSuccess: () => {
+              setSession((s) => {
+                if (!s) return s;
+                const next = {
+                  ...s,
+                  exercises: {
+                    ...s.exercises,
+                    [exerciseId]: { ...s.exercises[exerciseId], saved: true },
+                  },
+                };
+                sessionRef.current = next;
+                // Sync the saved=true flag to DB
+                syncSession(next);
+                return next;
+              });
+            },
+          }
+        );
+      }
     },
     [saveLog]
   );
 
+  const setExerciseWeight = useCallback(
+    (exerciseId: number, weight: number | null) => {
+      const prev = sessionRef.current;
+      if (!prev) return;
+
+      const newState: SessionState = {
+        ...prev,
+        exercises: {
+          ...prev.exercises,
+          [exerciseId]: { ...prev.exercises[exerciseId], weight },
+        },
+      };
+      sessionRef.current = newState;
+      setSession(newState);
+
+      // Debounce: sync session + actualizar default en ejercicio
+      if (weightTimer.current) clearTimeout(weightTimer.current);
+      weightTimer.current = setTimeout(() => {
+        syncSession(newState);
+        if (weight !== null) {
+          api.exercises.updateWeight(exerciseId, weight).catch(() => {});
+        }
+      }, 800);
+    },
+    []
+  );
+
   const getProgress = useCallback(
-    (exerciseId: number) => session?.exercises[exerciseId],
-    [session]
+    (exerciseId: number) => sessionRef.current?.exercises[exerciseId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session] // re-derivar cuando cambie session para que los componentes re-rendericen
   );
 
   return (
@@ -182,6 +210,7 @@ export const WorkoutSessionProvider = ({ children }: { children: ReactNode }) =>
         startSession,
         endSession,
         toggleSet,
+        setExerciseWeight,
         getProgress,
       }}
     >

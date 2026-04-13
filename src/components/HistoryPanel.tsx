@@ -11,19 +11,22 @@ import { Button } from "@/components/ui/button";
 import PageHeader from "./PageHeader";
 import HistoryLogCard from "./HistoryLogCard";
 
-type FilterType = "all" | "week" | "month" | "custom";
+type FilterType = "today" | "week" | "month" | "all" | "custom";
 
 const filters: { key: FilterType; label: string }[] = [
-  { key: "week",   label: "Semana" },
-  { key: "month",  label: "Mes"    },
-  { key: "all",    label: "Todo"   },
-  { key: "custom", label: "Fecha"  },
+  { key: "today",  label: "Hoy"     },
+  { key: "week",   label: "Semana"  },
+  { key: "month",  label: "Mes"     },
+  { key: "all",    label: "Todo"    },
+  { key: "custom", label: "Fecha"   },
 ];
 
+const TODAY = toDateStr(new Date().toISOString());
+
 const HistoryPanel = () => {
-  const [filter, setFilter]         = useState<FilterType>("week");
-  const [customDate, setCustomDate] = useState<Date | undefined>(new Date());
-  const [expandedDay, setExpandedDay] = useState<string | null>(null);
+  const [filter, setFilter]           = useState<FilterType>("today");
+  const [customDate, setCustomDate]   = useState<Date | undefined>(new Date());
+  const [expandedDay, setExpandedDay] = useState<string | null>(TODAY);
 
   const { data: logs = [], isLoading } = useHistory();
   const days = useMemo(() => groupByDate(logs), [logs]);
@@ -33,6 +36,8 @@ const HistoryPanel = () => {
     return days.filter(({ date }) => {
       const d = parseISO(date);
       switch (filter) {
+        case "today":
+          return date === TODAY;
         case "week":
           return isWithinInterval(d, {
             start: startOfWeek(now, { weekStartsOn: 1 }),
@@ -56,13 +61,13 @@ const HistoryPanel = () => {
           Historial
         </h1>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-0.5">
           {filters.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0",
                 filter === f.key
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
@@ -102,7 +107,11 @@ const HistoryPanel = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Dumbbell className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No hay entrenamientos en este período</p>
+            <p className="text-sm">
+              {filter === "today"
+                ? "Aún no entrenaste hoy"
+                : "No hay entrenamientos en este período"}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">

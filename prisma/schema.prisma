@@ -47,6 +47,7 @@ model Exercise {
   series          Int
   repetitions     Int
   muscleTags      String        @map("muscle_tags")
+  defaultWeight   Decimal?      @map("default_weight") @db.Decimal(6, 2)
   routineTypeIdFk Int?          @map("routine_type_id_fk")
   routineType     RoutineType?  @relation(fields: [routineTypeIdFk], references: [id])
   trainingLogs    TrainingLog[]

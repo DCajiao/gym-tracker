@@ -11,18 +11,24 @@ interface ExerciseCardProps {
 
 const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
   const [expanded, setExpanded] = useState(false);
-  const { isActive, toggleSet, getProgress } = useWorkoutSession();
+  const { isActive, toggleSet, setExerciseWeight, getProgress } = useWorkoutSession();
 
-  const progress    = getProgress(exercise.id);
-  const sets        = progress?.sets ?? new Array(exercise.series).fill(false);
-  const saved       = progress?.saved ?? false;
+  const progress       = getProgress(exercise.id);
+  const sets           = progress?.sets ?? new Array(exercise.series).fill(false);
+  const saved          = progress?.saved ?? false;
+  const currentWeight  = progress?.weight ?? null;
   const completedCount = sets.filter(Boolean).length;
-  const allDone     = completedCount === exercise.series;
-  const muscleTags  = exercise.muscleTags.split(",").map((t) => t.trim());
+  const allDone        = completedCount === exercise.series;
+  const muscleTags     = exercise.muscleTags.split(",").map((t) => t.trim());
 
   const handleSetClick = (si: number) => {
     if (!isActive || saved) return;
     toggleSet(exercise.id, si, exercise);
+  };
+
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setExerciseWeight(exercise.id, val === "" ? null : parseFloat(val));
   };
 
   return (
@@ -61,7 +67,10 @@ const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
             {muscleTags[0]}
             {muscleTags.length > 1 && ` +${muscleTags.length - 1}`}
             {" · "}
-            {exercise.series} series × {exercise.repetitions} reps
+            {exercise.series} × {exercise.repetitions} reps
+            {currentWeight != null && (
+              <span className="text-primary font-medium">· {currentWeight}kg</span>
+            )}
             {isActive && completedCount > 0 && (
               <span className="text-primary font-medium">
                 ({completedCount}/{exercise.series})
@@ -70,11 +79,10 @@ const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
           </p>
         </div>
 
-        {expanded ? (
-          <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-        )}
+        {expanded
+          ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+          : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+        }
       </button>
 
       {/* Expanded detail */}
@@ -96,6 +104,33 @@ const ExerciseCard = ({ exercise, index }: ExerciseCardProps) => {
             <p className="text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
               📝 {exercise.description}
             </p>
+          )}
+
+          {/* Weight input — solo visible durante sesión activa */}
+          {isActive && !saved && (
+            <div className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5",
+              completedCount > 0 ? "bg-secondary/20" : "bg-secondary/30"
+            )}>
+              <Dumbbell className="w-4 h-4 text-primary shrink-0" />
+              <label className="text-xs text-muted-foreground shrink-0">Peso (kg)</label>
+              {completedCount > 0 ? (
+                <span className="flex-1 text-sm font-semibold text-right text-muted-foreground">
+                  {currentWeight != null ? `${currentWeight} kg` : "—"}
+                </span>
+              ) : (
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={currentWeight ?? ""}
+                  onChange={handleWeightChange}
+                  placeholder="—"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 bg-transparent text-sm font-semibold text-right focus:outline-none min-w-0"
+                />
+              )}
+            </div>
           )}
 
           {/* Sets */}

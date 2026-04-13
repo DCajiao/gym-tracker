@@ -1,4 +1,4 @@
-import type { DaySchedule, TrainingLog, RoutineType } from "@/types/workout";
+import type { DaySchedule, TrainingLog, RoutineType, Exercise } from "@/types/workout";
 
 const BASE = "/api";
 const TOKEN_KEY = "gym_token";
@@ -75,6 +75,11 @@ export const api = {
     list: (): Promise<RoutineType[]> => request("/routine-types"),
     update: (id: number, data: Pick<RoutineType, "category" | "daysOfTheWeek" | "description">): Promise<RoutineType> =>
       request(`/routine-types/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  },
+
+  exercises: {
+    updateWeight: (id: number, defaultWeight: number | null): Promise<Exercise> =>
+      request(`/exercises/${id}/weight`, { method: "PATCH", body: JSON.stringify({ defaultWeight }) }),
   },
 
   trainingLogs: {

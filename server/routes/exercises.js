@@ -54,6 +54,20 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+/** PATCH /api/exercises/:id/weight — actualiza solo el peso por defecto */
+router.patch("/:id/weight", async (req, res) => {
+  const { defaultWeight } = req.body;
+  try {
+    const updated = await prisma.exercise.update({
+      where: { id: Number(req.params.id) },
+      data: { defaultWeight: defaultWeight ?? null },
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 /** DELETE /api/exercises/:id */
 router.delete("/:id", async (req, res) => {
   try {

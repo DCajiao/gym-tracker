@@ -40,6 +40,7 @@ export interface Exercise {
   series: number;
   repetitions: number;
   muscleTags: string;         // "bícep,antebrazo"
+  defaultWeight?: number | null;
   routineTypeIdFk?: number | null;
   routineType?: RoutineType | null;
 }
